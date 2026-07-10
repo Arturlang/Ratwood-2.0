@@ -87,6 +87,9 @@
 	if(mob.control_object)
 		return Move_object(direct)
 	if(!isliving(mob))
+		if(isobserver(mob))
+			var/mob/dead/observer/ghost = mob
+			move_delay = world.time + ghost.move_slowdown
 		return mob.Move(new_loc, direct)
 	else if(HAS_TRAIT(mob, TRAIT_IN_FRENZY) || HAS_TRAIT(mob, TRAIT_MOVEMENT_BLOCKED))
 		return FALSE
