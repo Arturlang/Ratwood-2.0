@@ -395,7 +395,7 @@
 /turf/closed/wall/mineral/rogue/sandbrick,
 /area/rogue/indoors/vampire_manor)
 "dL" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue/indoors/banditcamp/desert)
 "dM" = (
 /obj/structure/roguemachine/mail/r{
@@ -414,7 +414,7 @@
 /turf/open/floor/rogue/desert_grass,
 /area/rogue/outdoors/desertdeep/safe)
 "ea" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "eh" = (
 /obj/structure/roguewindow,
@@ -927,7 +927,7 @@
 	},
 /area/rogue/indoors/vampire_manor)
 "ii" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/outdoors/woods/above)
 "io" = (
 /obj/machinery/light/rogue/candle,
@@ -3570,7 +3570,7 @@
 /turf/open/floor/carpet/inn,
 /area/rogue/indoors/vampire_manor)
 "Gg" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue/outdoors/desertdeep/safe)
 "Gm" = (
 /obj/structure/mineral_door/swing_door,
@@ -3904,7 +3904,7 @@
 /turf/open/water/pond,
 /area/rogue/outdoors/woods/vampire_lair)
 "Jt" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/outdoors/woods/vampire_lair)
 "Jv" = (
 /obj/structure/fluff/railing/border{
@@ -4370,7 +4370,7 @@
 /turf/open/floor/rogue/tile/harem2,
 /area/rogue/indoors/banditcamp/desert)
 "Ng" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue)
 "Ns" = (
 /obj/structure/closet/crate/chest/old_crate,
@@ -4695,7 +4695,7 @@
 /turf/open/transparent/openspace,
 /area/rogue/indoors/vampire_manor)
 "Rg" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue/outdoors/banditcamp/desert)
 "Ri" = (
 /obj/machinery/light/rogue/candle/red/r,

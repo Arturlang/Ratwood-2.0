@@ -7557,7 +7557,7 @@
 /turf/open/floor/rogue/herringbone,
 /area/rogue/outdoors/mountains/decap/gunduzirak)
 "cdM" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/indoors/shelter/mountains)
 "cdN" = (
 /obj/item/natural/rock/desert{
@@ -8419,7 +8419,7 @@
 	endTurfX = 380;
 	endTurfY = 310
 	},
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "cqQ" = (
 /obj/structure/bars/passage/shutter{
@@ -9244,7 +9244,7 @@
 /area/rogue/under/town/basement/desert)
 "cDl" = (
 /obj/effect/oneway/baroness,
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/under/dungeon/bizbaz)
 "cDq" = (
 /obj/structure/closet/crate/roguecloset,
@@ -9474,7 +9474,7 @@
 /turf/open/floor/rogue/woodturned,
 /area/rogue/indoors/town/tavern/desert)
 "cGq" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/under/cave)
 "cGr" = (
 /obj/machinery/gear_painter,
@@ -16053,7 +16053,7 @@
 	},
 /area/rogue/indoors/town/desert)
 "ezK" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/outdoors/desertdeep/above)
 "ezR" = (
 /obj/machinery/light/rogue/candle/blue,
@@ -21103,7 +21103,7 @@
 /area/rogue/under/town/basement/desert/keep)
 "gan" = (
 /obj/effect/landmark/mapGenerator/rogue/desert,
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "gar" = (
 /turf/closed/mineral/rogue/sandstone,
@@ -24331,7 +24331,7 @@
 /area/rogue/indoors/town/desert)
 "gYs" = (
 /obj/effect/landmark/mapGenerator/rogue/underdarkrat,
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "gYu" = (
 /obj/structure/table/wood/large_table/north_east,
@@ -33798,7 +33798,7 @@
 /area/rogue/under/town/basement/desert)
 "jQx" = (
 /obj/structure/bars,
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/under/underdesert)
 "jQz" = (
 /obj/structure/flora/roguegrass/verdant,
@@ -34901,7 +34901,7 @@
 /turf/open/floor/rogue/naturalstone/sandstone,
 /area/rogue/under/cave)
 "kfL" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue/under/underdesert)
 "kfT" = (
 /obj/structure/fluff/railing/border{
@@ -47001,7 +47001,7 @@
 /turf/open/floor/rogue/naturalstone/sandstone,
 /area/rogue/under/cave)
 "nFL" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "nFN" = (
 /obj/structure/stairs/desert{
@@ -47566,7 +47566,7 @@
 	endTurfX = 380;
 	endTurfY = 260
 	},
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "nPb" = (
 /obj/machinery/light/rogue/hearth{
@@ -51981,7 +51981,7 @@
 /turf/open/floor/rogue/cobble/mossy,
 /area/rogue/indoors/town/church/basement)
 "pav" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/under/dungeon/sunkenchurch)
 "pax" = (
 /obj/effect/decal/cleanable/blood/old,
@@ -60554,7 +60554,7 @@
 /turf/open/floor/rogue/naturalstone/sandstone,
 /area/rogue/indoors/town/church/basement)
 "rCB" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/indoors/town/magician/desert)
 "rCC" = (
 /obj/machinery/light/rogue/candle/floorcandle/pink{
@@ -75779,7 +75779,7 @@
 /turf/open/floor/rogue/wood/nosmooth,
 /area/rogue/indoors/town/manor/desert)
 "vUW" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/under/underdesert)
 "vUY" = (
 /obj/structure/fluff/railing/border{
@@ -76205,7 +76205,7 @@
 /turf/open/floor/rogue/dunes,
 /area/rogue/outdoors/desert)
 "waW" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue)
 "wbb" = (
 /turf/open/floor/rogue/churchbrick,
@@ -79575,7 +79575,7 @@
 	endTurfX = 380;
 	endTurfY = 260
 	},
-/turf/closed,
+/turf/closed/void,
 /area/rogue)
 "wZa" = (
 /obj/structure/rack/rogue/shelf,
@@ -81988,7 +81988,7 @@
 /turf/open/floor/rogue/ruinedwood,
 /area/rogue/under/cavewet/bogcaves)
 "xIp" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/outdoors/mountains/decap/gunduzirak)
 "xIv" = (
 /obj/structure/fluff/railing/border,
@@ -83736,7 +83736,7 @@
 /area/rogue/indoors/town/tavern/desert)
 "ygz" = (
 /obj/effect/landmark/mapGenerator/rogue/desert,
-/turf/closed,
+/turf/closed/void,
 /area/rogue/outdoors/desertdeep)
 "ygM" = (
 /obj/machinery/light/rogue/torchholder{

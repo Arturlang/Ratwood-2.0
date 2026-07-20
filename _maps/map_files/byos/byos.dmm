@@ -5297,7 +5297,7 @@
 	},
 /area/rogue/indoors)
 "fXv" = (
-/turf/closed,
+/turf/closed/void,
 /turf/closed/mineral/rogue/bedrock,
 /area/rogue/under/cave)
 "fXD" = (
@@ -6068,7 +6068,7 @@
 	},
 /area/rogue/indoors/inq/boat/basement)
 "gJn" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "gJy" = (
 /obj/item/roguecoin/gold/pile,
@@ -11763,7 +11763,7 @@
 	},
 /area/rogue/indoors/inq/boat/office)
 "mFf" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue)
 "mFn" = (
 /obj/effect/decal/cobbleedge{
@@ -22257,7 +22257,7 @@
 /turf/open/floor/rogue/naturalstone,
 /area/rogue/under/cave)
 "xtU" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue/under/cave)
 "xud" = (
 /obj/structure/stairs/stone,

@@ -625,7 +625,7 @@
 /turf/open/floor/rogue/churchbrick,
 /area/rogue/indoors/lich_start/lich_lair)
 "Ba" = (
-/turf/closed/basic,
+/turf/closed/void,
 /area/rogue)
 "Be" = (
 /obj/structure/spider/stickyweb,
@@ -926,7 +926,7 @@
 /turf/open/floor/rogue/dirt,
 /area/rogue/indoors/lich_start/lich_lair)
 "NK" = (
-/turf/closed,
+/turf/closed/void,
 /area/rogue)
 "NR" = (
 /turf/open/floor/rogue/churchbrick,
