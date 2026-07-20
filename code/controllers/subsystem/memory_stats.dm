@@ -43,12 +43,13 @@ SUBSYSTEM_DEF(memory_stats)
 	return null
 
 /// Logs the RSS delta and init time of one subsystem's Initialize. Returns the new baseline for the next call.
+/// Tolerates null samples (windows rss writer warming up) by logging time-only lines until one lands.
 /proc/log_subsystem_init_memory(datum/controller/subsystem/SS, rss_before, init_time_s)
 	var/rss_after = get_process_rss_bytes()
-	if(isnull(rss_after))
-		return rss_before
-	if(!isnull(rss_before))
-		WRITE_LOG(GLOB.world_mem_log, "MEMINIT: [SS.name] rss_mb=[round(rss_after / (1024 * 1024), 0.1)] delta_mb=[round((rss_after - rss_before) / (1024 * 1024), 0.1)] init_s=[init_time_s]")
+	if(isnull(rss_after) || isnull(rss_before))
+		WRITE_LOG(GLOB.world_mem_log, "MEMINIT: [SS.name] rss_mb=unknown delta_mb=unknown init_s=[init_time_s]")
+		return isnull(rss_after) ? rss_before : rss_after
+	WRITE_LOG(GLOB.world_mem_log, "MEMINIT: [SS.name] rss_mb=[round(rss_after / (1024 * 1024), 0.1)] delta_mb=[round((rss_after - rss_before) / (1024 * 1024), 0.1)] init_s=[init_time_s]")
 	return rss_after
 
 /// Logs memory and time cost of parsing/loading one map file from SSmapping
