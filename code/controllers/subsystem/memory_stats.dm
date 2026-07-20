@@ -31,6 +31,21 @@ SUBSYSTEM_DEF(memory_stats)
 		return text2num(trim(seo[2]))
 	return null
 
+/// Logs the RSS delta and init time of one subsystem's Initialize. Returns the new baseline for the next call.
+/proc/log_subsystem_init_memory(datum/controller/subsystem/SS, rss_before, init_time_s)
+	var/rss_after = get_process_rss_bytes()
+	if(isnull(rss_after))
+		return rss_before
+	if(!isnull(rss_before))
+		WRITE_LOG(GLOB.world_mem_log, "MEMINIT: [SS.name] rss_mb=[round(rss_after / (1024 * 1024), 0.1)] delta_mb=[round((rss_after - rss_before) / (1024 * 1024), 0.1)] init_s=[init_time_s]")
+	return rss_after
+
+/// Logs memory and time cost of parsing/loading one map file from SSmapping
+/proc/log_map_memory(stage, map_path, rss_before, start_time)
+	var/rss_after = get_process_rss_bytes()
+	var/delta = (isnull(rss_after) || isnull(rss_before)) ? "unknown" : round((rss_after - rss_before) / (1024 * 1024), 0.1)
+	WRITE_LOG(GLOB.world_mem_log, "MEMMAP: [stage] [map_path] delta_mb=[delta] time_s=[(REALTIMEOFDAY - start_time) / 10]")
+
 /datum/controller/subsystem/memory_stats/proc/log_memory_stats()
 	var/list/out = list()
 

@@ -305,10 +305,14 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 //#endif
 
 	current_ticklimit = CONFIG_GET(number/tick_limit_mc_init)
+	var/init_rss_baseline = CONFIG_GET(flag/disable_memory_stats) ? null : get_process_rss_bytes()
 	for (var/datum/controller/subsystem/SS in subsystems)
 		if (SS.flags & SS_NO_INIT)
 			continue
+		var/ss_init_start = REALTIMEOFDAY
 		SS.Initialize(REALTIMEOFDAY)
+		if(!isnull(init_rss_baseline))
+			init_rss_baseline = log_subsystem_init_memory(SS, init_rss_baseline, (REALTIMEOFDAY - ss_init_start) / 10)
 		CHECK_TICK
 	current_ticklimit = TICK_LIMIT_RUNNING
 	var/time = (REALTIMEOFDAY - start_timeofday) / 10
