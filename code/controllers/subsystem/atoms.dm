@@ -6,8 +6,6 @@
 // how many atoms to init between RSS samples for per-type memory attribution
 // procfs reads are cheap; windows shells out per sample so it gets a much coarser window
 #define INIT_MEM_SAMPLE_INTERVAL ((world.system_type == UNIX) ? 2048 : 131072)
-/// max MEMTYPES lines written per mapload batch
-#define INIT_PROFILE_DUMP_COUNT 30
 
 SUBSYSTEM_DEF(atoms)
 	name = "Atoms"
@@ -64,6 +62,7 @@ SUBSYSTEM_DEF(atoms)
 					if(!bucket)
 						buckets[A.type] = bucket = list()
 					bucket += A
+				CHECK_TICK
 		else
 			for(var/atom/A in world)
 				if(!(A.flags_1 & INITIALIZED_1))
@@ -71,6 +70,7 @@ SUBSYSTEM_DEF(atoms)
 					if(!bucket)
 						buckets[A.type] = bucket = list()
 					bucket += A
+				CHECK_TICK
 		count = 0
 		for(var/bucket_type in buckets)
 			var/list/bucket = buckets[bucket_type]
@@ -136,7 +136,7 @@ SUBSYSTEM_DEF(atoms)
 			entry[2] += usage_delta * world.tick_lag
 		init_mem_window[the_type] = (init_mem_window[the_type] || 0) + 1
 		if(++init_mem_counter >= INIT_MEM_SAMPLE_INTERVAL)
-			sample_init_memory_window()
+			INVOKE_ASYNC(src, PROC_REF(sample_init_memory_window), null)
 
 	if(start_tick != world.time)
 		BadInitializeCalls[the_type] |= BAD_INIT_SLEPT
@@ -191,8 +191,8 @@ SUBSYSTEM_DEF(atoms)
 	init_mem_last_rss = rss
 	init_mem_window.Cut()
 
-/// Writes the per-type init cost of the last mapload batch to the memory stats log,
-/// top INIT_PROFILE_DUMP_COUNT types by estimated memory (falls back to init time if sampling failed)
+/// Writes the init cost of every type from the last mapload batch to the memory stats log,
+/// sorted by estimated memory (falls back to init time if sampling failed)
 /datum/controller/subsystem/atoms/proc/dump_init_profile()
 	if(!length(type_init_profile))
 		return
@@ -209,12 +209,9 @@ SUBSYSTEM_DEF(atoms)
 			var/list/entry = type_init_profile[init_type]
 			by_cost[init_type] = entry[2]
 	sortTim(by_cost, GLOBAL_PROC_REF(cmp_numeric_dsc), associative = TRUE)
-	var/lines = 0
 	for(var/init_type in by_cost)
-		if(++lines > INIT_PROFILE_DUMP_COUNT)
-			break
 		var/list/entry = type_init_profile[init_type]
-		WRITE_LOG(GLOB.world_mem_log, "MEMTYPES: [init_type] count=[entry[1]] total_ms=[round(entry[2], 0.1)] est_mb=[round(entry[3] / (1024 * 1024), 0.1)]")
+		WRITE_LOG(GLOB.world_mem_log, "MEMTYPES: [init_type] count=[entry[1]] total_ms=[round(entry[2], 0.1)] est_mb=[round(entry[3] / (1024 * 1024), 0.01)]")
 	if(!isnull(init_mem_last_rss))
 		WRITE_LOG(GLOB.world_mem_log, "MEMTYPES: dump complete, [length(type_init_profile)] types total, rss_mb=[round(init_mem_last_rss / (1024 * 1024), 0.1)]")
 	type_init_profile.Cut()

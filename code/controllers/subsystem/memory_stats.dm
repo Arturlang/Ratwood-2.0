@@ -17,7 +17,11 @@ SUBSYSTEM_DEF(memory_stats)
 /datum/controller/subsystem/memory_stats/fire(resumed)
 	log_memory_stats()
 
-/// Returns the process resident set size in bytes, or null if unavailable on this platform
+#define MEMORY_RSS_FILE "data/memory_rss.txt"
+
+/// Returns the process resident set size in bytes, or null if unavailable right now.
+/// On windows a hidden background powershell writer (tools/memory_stats/mem_writer.ps1)
+/// updates MEMORY_RSS_FILE, avoiding a console window flash per sample.
 /proc/get_process_rss_bytes()
 	if(world.system_type == UNIX)
 		var/status = rustg_file_read("/proc/self/status")
@@ -26,9 +30,16 @@ SUBSYSTEM_DEF(memory_stats)
 			if(rss_regex.Find(status))
 				return text2num(rss_regex.group[1]) * 1024
 		return null
-	var/list/seo = world.shelleo("powershell -NoProfile -Command \"(Get-Process dd,dreamdaemon -ErrorAction SilentlyContinue | Measure-Object WorkingSet64 -Sum).Sum\"")
-	if(seo && !seo[1])
-		return text2num(trim(seo[2]))
+	var/static/writer_started = FALSE
+	if(!writer_started)
+		writer_started = TRUE
+		fdel(MEMORY_RSS_FILE) // clear stale data from a previous round
+		shell("wscript //B //nologo \"tools/memory_stats/mem_writer.vbs\"")
+		return null
+	if(fexists(MEMORY_RSS_FILE))
+		var/bytes = text2num(trim(file2text(MEMORY_RSS_FILE) || ""))
+		if(bytes)
+			return bytes
 	return null
 
 /// Logs the RSS delta and init time of one subsystem's Initialize. Returns the new baseline for the next call.

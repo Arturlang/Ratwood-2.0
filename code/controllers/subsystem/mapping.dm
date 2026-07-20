@@ -240,9 +240,13 @@ SUBSYSTEM_DEF(mapping)
 			LoadGroup(errorList, conf.map_name, conf.map_path, conf.map_file, conf.map_folder, conf.traits, ZTRAITS_STATION)
 			continue
 
+		var/track_memory = !CONFIG_GET(flag/disable_memory_stats)
 		var/start_time = REALTIMEOFDAY
 		var/full_path = "[conf.map_folder]/[conf.map_path]/[conf.map_file]"
+		var/parse_rss = track_memory ? get_process_rss_bytes() : null
 		var/datum/parsed_map/pm = new(file(full_path))
+		if (track_memory)
+			log_map_memory("parse", full_path, parse_rss, start_time)
 		var/list/bounds = pm?.bounds
 		if (!bounds)
 			errorList |= full_path
@@ -289,8 +293,12 @@ SUBSYSTEM_DEF(mapping)
 				candidates += stack
 			pos = stack.try_place(width, height) || list(1, 1)
 
+		var/load_start = REALTIMEOFDAY
+		var/load_rss = track_memory ? get_process_rss_bytes() : null
 		if (!pm.load(pos[1], pos[2], stack.start_z, no_changeturf = TRUE))
 			errorList |= pm.original_path
+		if (track_memory)
+			log_map_memory("load", pm.original_path, load_rss, load_start)
 
 		log_game("Loaded [conf.map_name] at [pos[1]],[pos[2]] z[stack.start_z] in [(REALTIMEOFDAY - start_time)/10]s!")
 
