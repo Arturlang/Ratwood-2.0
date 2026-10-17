@@ -2364,9 +2364,9 @@ GLOBAL_VAR_INIT(cold_breath_overlay, mutable_appearance(
 /datum/species/proc/handle_fire(mob/living/carbon/human/H, no_protection = FALSE)
 	if(!Canignite_mob(H))
 		return TRUE
-	
+
 	// Stops maxing out temp from firestacks alone
-	if(H.bodytemperature > BODYTEMP_HEAT_LEVEL_ONE_MAX)	
+	if(H.bodytemperature > BODYTEMP_HEAT_LEVEL_ONE_MAX)
 		return
 	var/thermal_protection = H.get_thermal_protection()
 
