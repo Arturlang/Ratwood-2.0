@@ -115,7 +115,8 @@ GLOBAL_VAR_INIT(fov_box_uid, 0)
 	var/my_z = my_turf.z
 	var/radius = custom_radius ? custom_radius : (is_looking_afar ? 18 : 8)
 
-	var/list/quad_data = fov_shadows_calculate_shadows_fast(px, py, my_z, radius)
+	var/list/view = fov_shadows_calculate_view(px, py, my_z, radius)
+	var/list/quad_data = view["shadows"]
 
 	var/list/used_keys_this_frame = list()
 
@@ -156,7 +157,7 @@ GLOBAL_VAR_INIT(fov_box_uid, 0)
 
 	client.clear_unused_shadows(used_keys_this_frame)
 	
-	var/list/visible_ids = fov_shadows_get_visible_boxes(px, py, my_z, radius)
+	var/list/visible_ids = view["visible"]
 	var/list/visible_map = list()
 	if(islist(visible_ids))
 		for(var/vid in visible_ids)

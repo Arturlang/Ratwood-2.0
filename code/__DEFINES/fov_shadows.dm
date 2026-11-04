@@ -30,7 +30,8 @@
 	return length(raw) ? json_decode(raw) : list()
 
 /// Gets the version of the fov_shadows library.
-#define fov_shadows_get_version() call_ext(FOV_SHADOWS, "get_version")()
+/proc/fov_shadows_get_version()
+	return call_ext(FOV_SHADOWS, "get_version")()
 /// Allocates the occluder grid for the whole world. Call once after all z-levels are loaded; it clears every cell and box.
 #define fov_shadows_init_map_bounds(maxx, maxy, maxz) call_ext(FOV_SHADOWS, "init_map_bounds")("[maxx]", "[maxy]", "[maxz]")
 /// Marks one tile as SHADOW_CELL_EMPTY, SHADOW_CELL_WALL or SHADOW_CELL_TREE.
@@ -43,5 +44,7 @@
 #define fov_shadows_remove_box_by_id(id) call_ext(FOV_SHADOWS, "remove_box_by_id")("[id]")
 /// Returns a flat list of 9 values per shadow triangle: anchor_x, anchor_y, matrix a, b, c, d, e, f, key.
 #define fov_shadows_calculate_shadows_fast(px, py, z, radius) __fov_shadows_decode(call_ext(FOV_SHADOWS, "calculate_shadows_fast")("[px]", "[py]", "[z]", "[radius]"))
+/// Returns list("shadows" = shadow triangles, "visible" = visible box ids) from one scan. Prefer this over calling the two functions below separately.
+#define fov_shadows_calculate_view(px, py, z, radius) __fov_shadows_decode(call_ext(FOV_SHADOWS, "calculate_view")("[px]", "[py]", "[z]", "[radius]"))
 /// Returns the list of box ids visible from (px, py) on z within radius.
 #define fov_shadows_get_visible_boxes(px, py, z, radius) __fov_shadows_decode(call_ext(FOV_SHADOWS, "get_visible_boxes")("[px]", "[py]", "[z]", "[radius]"))
