@@ -228,13 +228,7 @@
 	appearance_flags = PLANE_MASTER
 	blend_mode = BLEND_OVERLAY
 
-/atom/movable/screen/plane_master/wall_objects
-	name = "wall objects plane master"
-	plane = WALL_PLANE
-	appearance_flags = PLANE_MASTER
-	blend_mode = BLEND_OVERLAY
-
-/atom/movable/screen/plane_master/wall_objects/backdrop(mob/mymob)
+/atom/movable/screen/plane_master/game_world_below/backdrop(mob/mymob)
 	clear_filters()
 	filters += AMBIENT_OCCLUSION
 	if(istype(mymob) && mymob.eye_blurry)

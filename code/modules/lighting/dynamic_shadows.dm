@@ -1,349 +1,182 @@
-#define SHADOW_IMAGE_POOL_SIZE 500
-#define SHADOW_OPACITY         255
-GLOBAL_LIST_EMPTY(fov_cutout_objects)
-GLOBAL_VAR_INIT(fov_box_uid, 0)
+/**
+ * Dynamic field-of-view shadows.
+ *
+ * The fov_shadows library keeps a grid of occluders (closed opaque turfs, trees) plus the boxes
+ * registered by /datum/component/fov_shadow_box. For a viewer position it returns shadow triangles,
+ * keyed by the wall edge, tree or box that casts each one, and the ids of boxes the viewer can see.
+ * Each client keeps one pooled image per key, so a shadow that persists between updates animates
+ * into its new shape instead of being recreated, and one cutout image per box it has seen.
+ */
 
-/proc/set_shadow_cell(x, y, z, cell_type)
-	fov_shadows_set_map_cell(x, y, z, cell_type)
+/// Living mobs waiting for a shadow refresh because an occluder changed near them, flushed once per tick.
+GLOBAL_LIST_EMPTY(pending_shadow_updates)
 
-/client
-	var/list/image/shadow_images_pool = list()
-	var/list/image/active_shadows = list()
-
-/client/proc/init_shadow_pool()
-	if(shadow_images_pool.len || active_shadows.len)
-		return
-
-	for(var/i in 1 to SHADOW_IMAGE_POOL_SIZE)
-		var/image/I = image('icons/effects/shadow_geom.dmi', icon_state = "triangle")
-		I.plane = RAW_WALL_SHADOW_PLANE
-		I.blend_mode = BLEND_ADD
-		I.color = "#ffffff"
-		I.alpha = SHADOW_OPACITY
-		I.appearance_flags = NO_CLIENT_COLOR | RESET_COLOR
-		shadow_images_pool += I
-		images += I
-
-/client/proc/alloc_shadow_image()
-	if(shadow_images_pool.len)
-		var/image/I = shadow_images_pool[shadow_images_pool.len]
-		shadow_images_pool.len--
-		return I
-
-	var/image/I = image('icons/effects/shadow_geom.dmi', icon_state = "triangle")
-	I.plane = RAW_WALL_SHADOW_PLANE
-	I.blend_mode = BLEND_ADD
-	I.color = "#ffffff"
-	I.alpha = SHADOW_OPACITY
-	I.appearance_flags = NO_CLIENT_COLOR | RESET_COLOR
-	images += I
-	return I
-
-/client/proc/clear_unused_shadows(list/used_keys)
-	var/list/keys_to_remove = list()
-
-	for(var/key in active_shadows)
-		if(!used_keys || !used_keys[key])
-			var/image/I = active_shadows[key]
-			if(I)
-				I.loc = null
-				animate(I)
-				I.transform = matrix()
-				shadow_images_pool += I
-			keys_to_remove += key
-
-	if(keys_to_remove.len)
-		active_shadows -= keys_to_remove
-
-/client/proc/init_shadow_images()
-	init_shadow_pool()
-
-/proc/is_wall_tile(turf/T)
-	if(!T) return FALSE
-	if(T.density && T.opacity) return TRUE
-	if(istype(T, /turf/closed)) return TRUE
-	return FALSE
-
-/proc/get_round_occluder(turf/T)
-	if(!T) return null
-	for(var/atom/A in T.contents)
-		if(istype(A, /obj/structure/flora/newtree))
-			if(A.density && A.opacity)
-				return A
-	return null
-
-/mob/living
-	var/shadow_glide_id = 0
-	var/shadow_curr_px = null
-	var/shadow_curr_py = null
-	var/turf/last_shadow_turf
-	var/is_looking_afar = FALSE
-	var/shadow_glide_time = 0  
-
-/proc/notify_shadows_map_changed(atom/A, custom_range = 18, mob/living/skip_mob = null)
-	if(!SSmapping || !SSmapping.initialized)
-		return
-
-	for(var/mob/living/L in range(custom_range, A))
-		if(!L.client || L == skip_mob)
+/// What the shadow grid should hold for this turf. Anything opaque blocks sight like a wall, except
+/// a tree, which the library treats as a round occluder. Follows the lighting system's notion of
+/// opacity, so whatever updates lighting also updates shadows.
+/turf/proc/shadow_cell_type()
+	if(opacity)
+		return SHADOW_CELL_WALL
+	var/cell = SHADOW_CELL_EMPTY
+	for(var/atom/movable/occupant as anything in contents)
+		if(!occupant.opacity)
 			continue
-		L.update_dynamic_shadows(custom_glide = 0)
+		if(istype(occupant, /obj/structure/flora/newtree))
+			return SHADOW_CELL_TREE
+		cell = SHADOW_CELL_WALL
+	return cell
 
-/mob/living/proc/update_dynamic_shadows(custom_px = null, custom_py = null, custom_radius = null, custom_glide = 0)
+/// Writes this turf's cell to the shadow grid and refreshes anyone who can see it. Called wherever
+/// the lighting system learns that opacity on the turf changed.
+/turf/proc/update_shadow_cell()
+	fov_shadows_set_map_cell(x, y, z, shadow_cell_type())
+	notify_shadows_map_changed(src)
+
+/// Recomputes this mob's shadows from its current position. Existing shadows animate into their new
+/// shape over glide deciseconds; 0 snaps them.
+/mob/living/proc/update_dynamic_shadows(glide = 0)
 	if(!client)
 		return
-	client.init_shadow_pool()
-
 	var/turf/my_turf = get_turf(src)
 	if(!my_turf)
 		return
+	// Viewer position in tile units: tile centre plus the sprite's pixel offset.
+	var/viewer_x = my_turf.x + 0.5 + (step_x + pixel_x) / world.icon_size
+	var/viewer_y = my_turf.y + 0.5 + (step_y + pixel_y) / world.icon_size
+	// Looking afar moves the camera up to a screen away, so the window has to cover that as well.
+	var/radius = is_looking_afar ? 18 : 8
+	var/list/view = fov_shadows_calculate_view(viewer_x, viewer_y, my_turf.z, radius)
+	client.apply_shadow_view(view["shadows"], view["visible"], my_turf.z, glide)
 
-	var/px
-	var/py
-	if(custom_px != null && custom_py != null)
-		px = custom_px
-		py = custom_py
-	else
-		var/total_px = (isnum(src.step_x) ? src.step_x : 0) + src.pixel_x
-		var/total_py = (isnum(src.step_y) ? src.step_y : 0) + src.pixel_y
-		px = my_turf.x + 0.5 + (total_px / 32.0)
-		py = my_turf.y + 0.5 + (total_py / 32.0)
-
-	shadow_curr_px = px
-	shadow_curr_py = py
-
-	var/my_z = my_turf.z
-	var/radius = custom_radius ? custom_radius : (is_looking_afar ? 18 : 8)
-
-	var/list/view = fov_shadows_calculate_view(px, py, my_z, radius)
-	var/list/quad_data = view["shadows"]
-
-	var/list/used_keys_this_frame = list()
-
-	if(quad_data && islist(quad_data))
-		var/total_len = quad_data.len
-		var/last_ax = -1
-		var/last_ay = -1
-		var/turf/cached_turf = null
-
-		for(var/i = 1; i <= total_len; i += 9)
-			var/key = quad_data[i + 8]
-			used_keys_this_frame[key] = TRUE
-			var/ax = quad_data[i]
-			var/ay = quad_data[i + 1]
-
-			if(ax != last_ax || ay != last_ay)
-				cached_turf = locate(ax, ay, my_z)
-				last_ax = ax
-				last_ay = ay
-
-			var/image/I = client.active_shadows[key]
-			if(!I)
-				I = client.alloc_shadow_image()
-				if(!I)
-					continue
-				client.active_shadows[key] = I
-				I.loc = cached_turf
-			else if(I.loc != cached_turf)
-				I.loc = cached_turf
-
-			var/matrix/M = matrix(
-				quad_data[i + 2], quad_data[i + 3], quad_data[i + 4],
-				quad_data[i + 5], quad_data[i + 6], quad_data[i + 7]
-			)
-
-			if(I.transform != M)
-				I.transform = M
-
-	client.clear_unused_shadows(used_keys_this_frame)
-	
-	var/list/visible_ids = view["visible"]
-	var/list/visible_map = list()
-	if(islist(visible_ids))
-		for(var/vid in visible_ids)
-			visible_map["[round(vid)]"] = TRUE
-
-	for(var/obj/O in GLOB.fov_cutout_objects)
-		if(O.z != my_z || !O.cutout_atom)
+/// Queues a refresh for every player who can see a changed occluder. Calls in the same tick merge,
+/// so a turf change, which destroys one turf and creates another, costs each viewer one refresh.
+/proc/notify_shadows_map_changed(atom/changed)
+	if(!SSatoms.initialized) // the map is still loading and nobody is on it yet
+		return
+	var/turf/changed_turf = get_turf(changed)
+	if(!changed_turf)
+		return
+	for(var/mob/living/viewer in GLOB.player_list)
+		var/turf/viewer_turf = get_turf(viewer)
+		// 18 is the widest shadow window a viewer uses, see update_dynamic_shadows().
+		if(!viewer_turf || viewer_turf.z != changed_turf.z || get_dist(viewer_turf, changed_turf) > 18)
 			continue
-			
-		var/str_id = "[round(O.fov_box_id)]"
-		
-		if(visible_map[str_id])
-			O.cutout_atom.alpha = 255
-		else
-			O.cutout_atom.alpha = 0
+		GLOB.pending_shadow_updates |= viewer
+	if(length(GLOB.pending_shadow_updates))
+		addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(flush_pending_shadow_updates)), 0, TIMER_UNIQUE)
 
+/proc/flush_pending_shadow_updates()
+	var/list/viewers = GLOB.pending_shadow_updates
+	GLOB.pending_shadow_updates = list()
+	for(var/mob/living/viewer as anything in viewers)
+		if(!QDELETED(viewer))
+			viewer.update_dynamic_shadows()
+
+/// Places the triangles the library returned, nine values each: anchor x, anchor y, matrix a to f, key.
+/client/proc/apply_shadow_view(list/triangles, list/visible_box_ids, z, glide)
+	var/list/used_keys = list()
+	var/turf/anchor
+	var/anchor_x
+	var/anchor_y
+	for(var/index = 1, index <= length(triangles), index += 9)
+		var/key = triangles[index + 8]
+		used_keys[key] = TRUE
+		if(triangles[index] != anchor_x || triangles[index + 1] != anchor_y)
+			anchor_x = triangles[index]
+			anchor_y = triangles[index + 1]
+			anchor = locate(anchor_x, anchor_y, z)
+		var/matrix/shape = matrix(triangles[index + 2], triangles[index + 3], triangles[index + 4], triangles[index + 5], triangles[index + 6], triangles[index + 7])
+		var/image/shadow = active_shadows[key]
+		if(!shadow)
+			shadow = take_shadow_image()
+			active_shadows[key] = shadow
+			shadow.loc = anchor
+			shadow.transform = shape
+			continue
+		var/animate_time = glide
+		if(shadow.loc != anchor)
+			shadow.loc = anchor
+			animate_time = 0 // the matrix is relative to the anchor, so interpolating across a jump would smear
+		// Linear interpolation keeps the vertices two triangles share coincident while they move;
+		// the default decomposes the matrix into rotation and scale and bends them apart.
+		animate(shadow, transform = shape, time = animate_time, flags = ANIMATION_END_NOW | ANIMATION_LINEAR_TRANSFORM)
+	release_unused_shadows(used_keys)
+	update_shadow_cutouts(visible_box_ids)
+
+/client/proc/take_shadow_image()
+	var/pooled = length(shadow_image_pool)
+	if(pooled)
+		var/image/shadow = shadow_image_pool[pooled]
+		shadow_image_pool.len--
+		return shadow
+	var/image/shadow = image('icons/effects/shadow_geom.dmi', icon_state = "triangle")
+	shadow.plane = RAW_WALL_SHADOW_PLANE
+	shadow.blend_mode = BLEND_ADD
+	// PIXEL_SCALE: a 32px sprite stretched over hundreds of pixels would otherwise have its edges
+	// smoothed across many screen pixels, leaving light seams where two triangles meet.
+	shadow.appearance_flags = NO_CLIENT_COLOR | RESET_COLOR | PIXEL_SCALE
+	images += shadow
+	return shadow
+
+/// Returns every active shadow whose key is not in used_keys to the pool; null releases them all.
+/client/proc/release_unused_shadows(list/used_keys)
+	var/list/released_keys = list()
+	for(var/key in active_shadows)
+		if(used_keys && used_keys[key])
+			continue
+		var/image/shadow = active_shadows[key]
+		shadow.loc = null
+		animate(shadow)
+		shadow.transform = null
+		shadow_image_pool += shadow
+		released_keys += key
+	active_shadows -= released_keys
+
+/// Shows the cutouts of the boxes this client can now see and hides the ones it no longer can.
+/client/proc/update_shadow_cutouts(list/visible_box_ids)
+	var/list/now_visible = list()
+	for(var/box_id in visible_box_ids)
+		now_visible["[box_id]"] = TRUE
+	for(var/box_id in visible_cutouts)
+		if(now_visible[box_id])
+			continue
+		var/image/cutout = shadow_cutouts[box_id]
+		if(cutout)
+			cutout.alpha = 0
+	for(var/box_id in now_visible)
+		if(visible_cutouts[box_id])
+			continue
+		var/image/cutout = shadow_cutouts[box_id]
+		if(!cutout)
+			var/datum/component/fov_shadow_box/box = GLOB.fov_shadow_boxes[box_id]
+			if(!box?.cutout)
+				continue
+			cutout = box.build_cutout_image()
+			shadow_cutouts[box_id] = cutout
+			images += cutout
+		cutout.alpha = 255
+	visible_cutouts = now_visible
+
+/client/proc/drop_shadow_cutout(box_id)
+	var/image/cutout = shadow_cutouts[box_id]
+	if(!cutout)
+		return
+	images -= cutout
+	shadow_cutouts -= box_id
+	visible_cutouts -= box_id
+
+/// Hides everything but keeps the images for reuse, for when the client changes mob.
 /client/proc/reset_shadow_pool()
-	for(var/key in active_shadows)
-		var/image/I = active_shadows[key]
-		if(I)
-			I.loc = null
-			animate(I)
-			I.transform = matrix()
-			shadow_images_pool += I
-	active_shadows.Cut()
+	release_unused_shadows(null)
+	update_shadow_cutouts(null)
 
-
-/obj/effect/shadow_cutout
-	name = "shadow cutout"
-	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
-	plane = SHADOW_CUTOUT_PLANE
-	vis_flags = VIS_INHERIT_DIR | VIS_INHERIT_ID
-
-/obj
-	var/fov_shadow_cutout = TRUE
-	var/obj/effect/shadow_cutout/cutout_atom = null
-
-/obj/proc/add_shadow_cutout()
-	if(cutout_atom)
-		vis_contents -= cutout_atom
-		qdel(cutout_atom)
-		cutout_atom = null
-
-	var/obj/effect/shadow_cutout/C = new(null)
-	
-	C.icon = src.icon
-	C.icon_state = src.icon_state
-	C.dir = src.dir
-	C.color = src.color
-	C.transform = src.transform
-	if(src.overlays.len)
-		C.overlays = src.overlays.Copy()
-	
-	C.pixel_x = 0
-	C.pixel_y = 0
-	C.vis_flags = VIS_INHERIT_DIR | VIS_INHERIT_ID
-	
-	C.plane = SHADOW_CUTOUT_PLANE
-	C.layer = FLOAT_LAYER
-	C.mouse_opacity = MOUSE_OPACITY_TRANSPARENT
-	C.blend_mode = BLEND_DEFAULT
-	C.alpha = 0 
-	
-	cutout_atom = C
-	vis_contents += C
-	GLOB.fov_cutout_objects |= src
-
-/obj/proc/remove_shadow_cutout()
-	if(cutout_atom)
-		vis_contents -= cutout_atom
-		qdel(cutout_atom)
-		cutout_atom = null
-	GLOB.fov_cutout_objects -= src
-
-
-/obj/proc/on_fov_moved(datum/source, atom/OldLoc, Dir, Forced)
-	SIGNAL_HANDLER
-	if(!fov_shadow_box || !fov_box_id)
-		return
-
-	var/turf/old_turf = get_turf(OldLoc)
-	var/turf/new_turf = get_turf(src)
-
-	if(!old_turf || !new_turf || (old_turf == new_turf))
-		return
-
-	var/total_ticks = 1
-	if(glide_size > 0)
-		total_ticks = max(1, round(world.icon_size / glide_size))
-
-	if(total_ticks <= 1 || Forced)
-		register_fov_boxes(new_turf.x, new_turf.y)
-		notify_shadows_map_changed(new_turf, custom_range = 7)
-		return
-
-	glide_shadow_by_pixels(old_turf, new_turf, total_ticks)
-
-/obj/proc/glide_shadow_by_pixels(turf/old_turf, turf/new_turf, total_ticks)
-	set waitfor = FALSE
-	var/this_id = ++fov_glide_id
-	var/sleep_delay = world.tick_lag
-
-	for(var/i in 1 to total_ticks)
-		if(this_id != fov_glide_id || QDELETED(src))
-			return
-
-		var/progress = i / total_ticks
-		var/curr_x = old_turf.x + (new_turf.x - old_turf.x) * progress
-		var/curr_y = old_turf.y + (new_turf.y - old_turf.y) * progress
-
-		register_fov_boxes(curr_x, curr_y)
-		notify_shadows_map_changed(new_turf, custom_range = 7)
-
-		if(i < total_ticks)
-			sleep(sleep_delay)
-		
-/obj/proc/glide_shadow_box(turf/old_turf, turf/new_turf, total_points)
-	set waitfor = FALSE
-	var/this_id = ++fov_glide_id
-	var/sleep_delay = world.tick_lag
-
-	for(var/i in 1 to total_points)
-		if(this_id != fov_glide_id || QDELETED(src))
-			return
-		var/progress = i / total_points
-		var/curr_x = old_turf.x + (new_turf.x - old_turf.x) * progress
-		var/curr_y = old_turf.y + (new_turf.y - old_turf.y) * progress
-
-		register_fov_boxes(curr_x, curr_y)
-		notify_shadows_map_changed(new_turf)
-
-		if(i < total_points)
-			sleep(sleep_delay)
-
-/obj/proc/register_fov_boxes(custom_wx = null, custom_wy = null)
-	var/turf/T = get_turf(src)
-	if(!T || !fov_shadow_box || !fov_box_id)
-		return
-
-	var/wx
-	var/wy
-	if(custom_wx != null && custom_wy != null)
-		wx = custom_wx
-		wy = custom_wy
-	else
-		var/total_px = (isnum(src.step_x) ? src.step_x : 0) + src.pixel_x
-		var/total_py = (isnum(src.step_y) ? src.step_y : 0) + src.pixel_y
-		wx = T.x + (total_px / 32.0)
-		wy = T.y + (total_py / 32.0)
-
-	var/wz = T.z
-
-	if(isnum(fov_shadow_box[1]))
-		fov_shadows_set_box_world(fov_box_id, wz, wx, wy, fov_shadow_box[1], fov_shadow_box[2], fov_shadow_box[3], fov_shadow_box[4])
-	else
-		var/sub_id = 0
-		for(var/list/B in fov_shadow_box)
-			fov_shadows_set_box_world(fov_box_id + (sub_id++ * 100000), wz, wx, wy, B[1], B[2], B[3], B[4])
-
-/obj/proc/update_fov_shadow_pixel_shift()
-	if(!fov_shadow_box || !fov_box_id)
-		return
-	register_fov_boxes()
-	notify_shadows_map_changed(src, custom_range = 7)
-
-/obj/proc/unregister_fov_boxes()
-	if(!fov_box_id)
-		return
-	if(isnum(fov_shadow_box[1]))
-		fov_shadows_remove_box_by_id(fov_box_id)
-	else
-		var/sub_id = 0
-		for(var/list/B in fov_shadow_box)
-			fov_shadows_remove_box_by_id(fov_box_id + (sub_id++ * 100000))
-
-	notify_shadows_map_changed(src, custom_range = 7)
-
+/// Frees every shadow image, for when the client leaves the living world.
 /client/proc/destroy_shadow_pool()
-	for(var/key in active_shadows)
-		var/image/I = active_shadows[key]
-		if(I)
-			images -= I
-	
-	for(var/image/I in shadow_images_pool)
-		if(I)
-			images -= I
-			
-	active_shadows.Cut()
-	shadow_images_pool.Cut()
+	release_unused_shadows(null)
+	for(var/image/shadow as anything in shadow_image_pool)
+		images -= shadow
+	shadow_image_pool.Cut()
+	for(var/box_id in shadow_cutouts)
+		images -= shadow_cutouts[box_id]
+	shadow_cutouts.Cut()
+	visible_cutouts.Cut()

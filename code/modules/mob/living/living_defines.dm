@@ -279,3 +279,6 @@
 	var/dualwield_resets_in = 0
 	var/dualwield_buff_cd = 0
 	var/dualwield_twoswing = FALSE
+
+	/// Set while look_further() has the camera offset; widens the dynamic shadow window to cover the extra view.
+	var/is_looking_afar = FALSE

@@ -2020,8 +2020,7 @@
 /mob/living/onTransitZ(old_z,new_z)
 	..()
 	update_z(new_z)
-	last_shadow_turf = null
-	update_dynamic_shadows(custom_glide = 0)
+	update_dynamic_shadows()
 
 /mob/living/MouseDrop(mob/over)
 	. = ..()
@@ -2401,7 +2400,7 @@
 //	RegisterSignal(src, COMSIG_MOVABLE_PRE_MOVE, PROC_REF(stop_looking))
 
 	is_looking_afar = TRUE
-	update_dynamic_shadows(custom_radius = 18, custom_glide = ttime)
+	update_dynamic_shadows(ttime)
 
 	update_cone_show()
 
@@ -2465,7 +2464,7 @@
 
 	if(is_looking_afar)
 		is_looking_afar = FALSE
-		update_dynamic_shadows(custom_radius = 8, custom_glide = 2)
+		update_dynamic_shadows(2)
 //	UnregisterSignal(src, COMSIG_MOVABLE_PRE_MOVE)
 
 /mob/living/proc/resist_leash()

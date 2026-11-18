@@ -181,9 +181,6 @@
 //	climb_time *= 0.5 //it's faster to climb onto an open thing
 	dump_contents()
 	update_icon()
-	if(opened && fov_shadow_box)
-		remove_shadow_cutout()
-		unregister_fov_boxes()
 	return 1
 
 /obj/structure/closet/proc/insert(atom/movable/AM)
@@ -244,11 +241,6 @@
 	opened = FALSE
 	density = TRUE
 	update_icon()
-	if(!opened && fov_shadow_box)
-		register_fov_boxes()
-		if(fov_shadow_cutout)
-			add_shadow_cutout()
-		notify_shadows_map_changed(src, custom_range = 7)
 	return TRUE
 
 /obj/structure/closet/proc/toggle(mob/living/user)

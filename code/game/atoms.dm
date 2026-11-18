@@ -179,6 +179,7 @@
 	if (opacity && isturf(loc))
 		var/turf/T = loc
 		T.opaque_atom_count++
+		T.update_shadow_cell()
 
 	if (canSmoothWith)
 		canSmoothWith = typelist("canSmoothWith", canSmoothWith)

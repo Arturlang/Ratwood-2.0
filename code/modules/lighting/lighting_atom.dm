@@ -115,6 +115,7 @@
 	if (opacity && istype(T))
 		T.opaque_atom_count--
 		T.reconsider_lights()
+		T.update_shadow_cell()
 
 // Should always be used to change the opacity of an atom.
 // It notifies (potentially) affected light sources so they can update (if needed).
@@ -132,6 +133,7 @@
 	else
 		T.opaque_atom_count--
 	T.reconsider_lights()
+	T.update_shadow_cell()
 
 // No /atom/movable/Moved override here, that's handled by a signal now.
 

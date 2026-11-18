@@ -118,6 +118,9 @@
 	if (opacity)
 		opaque_atom_count = 1 // we count ourselves
 
+	if (opacity || !mapload)
+		update_shadow_cell()
+
 	ComponentInitialize()
 
 	queue_smooth_neighbors(src)
@@ -139,6 +142,9 @@
 	if(T)
 		T.multiz_turf_del(src, UP)
 	STOP_PROCESSING(SSweather,src)
+	// The replacing turf recomputes the cell when it initializes outside mapload; this covers mapload.
+	if(opacity)
+		fov_shadows_set_map_cell(x, y, z, SHADOW_CELL_EMPTY)
 	if(force)
 		..()
 		//this will completely wipe turf state
@@ -424,6 +430,7 @@
 	if (entered_movable.opacity)
 		opaque_atom_count++ // Make sure to do this before reconsider_lights(), incase we're on instant updates.
 		reconsider_lights()
+		update_shadow_cell()
 	if(isstructure(entered_movable))
 		var/obj/structure/entered_structure = entered_movable
 		if(entered_structure.density && entered_structure.climbable)
@@ -439,6 +446,7 @@
 	if (gone?.opacity)
 		opaque_atom_count-- // Make sure to do this before reconsider_lights(), incase we're on instant updates.
 		reconsider_lights()
+		update_shadow_cell()
 	if(isstructure(gone))
 		var/obj/structure/exited_structure = gone
 		if(exited_structure.density && exited_structure.climbable)

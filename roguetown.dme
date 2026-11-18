@@ -732,6 +732,7 @@
 #include "code\datums\components\familial_bond.dm"
 #include "code\datums\components\footstep.dm"
 #include "code\datums\components\forensics.dm"
+#include "code\datums\components\fov_shadow_box.dm"
 #include "code\datums\components\hideous_face.dm"
 #include "code\datums\components\hiding_spot.dm"
 #include "code\datums\components\igniter.dm"

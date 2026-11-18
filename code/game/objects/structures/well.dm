@@ -68,8 +68,10 @@
 	layer = ABOVE_ALL_MOB_LAYER
 	plane = GAME_PLANE_UPPER
 	pixel_x = -15
-	fov_shadow_box = list(6, 16, 58, 30)
-	fov_shadow_cutout = TRUE
+
+/obj/structure/well/fountain/Initialize(mapload)
+	. = ..()
+	AddComponent(/datum/component/fov_shadow_box, list(6, 16, 58, 30))
 
 /obj/structure/well/fountain/attackby(obj/item/I, mob/user, params)
 	if(istype(I, /obj/item/reagent_containers/glass))

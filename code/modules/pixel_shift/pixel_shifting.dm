@@ -37,10 +37,15 @@
 		is_shifted = FALSE
 		pixel_x = get_standard_pixel_x_offset() + base_pixel_x
 		pixel_y = get_standard_pixel_y_offset() + base_pixel_y
-		update_dynamic_shadows(custom_glide = 0)
+		update_dynamic_shadows()
 
 /mob/proc/pixel_shift(direction)
 	return
+
+/// Whether the shadow system treats this turf as solid, so pixel shifting stops short of it rather
+/// than letting the viewer's eye end up inside an occluder.
+/proc/turf_blocks_shadow_view(turf/checked)
+	return checked && checked.shadow_cell_type() != SHADOW_CELL_EMPTY
 
 /mob/living/set_pull_offsets(mob/living/pull_target, grab_state)
 	pull_target.unpixel_shift()
@@ -58,17 +63,16 @@
 	var/max_s = -PIXEL_SHIFT_MAXIMUM
 	var/max_e = PIXEL_SHIFT_MAXIMUM
 	var/max_w = -PIXEL_SHIFT_MAXIMUM
-	var/wall_limit = 10 
-
-	var/turf/TN = get_step(src, NORTH)
-	var/turf/TS = get_step(src, SOUTH)
-	var/turf/TE = get_step(src, EAST)
-	var/turf/TW = get_step(src, WEST)
-
-	if(is_wall_tile(TN) || get_round_occluder(TN)) max_n = min(max_n, wall_limit)
-	if(is_wall_tile(TS) || get_round_occluder(TS)) max_s = max(max_s, -wall_limit)
-	if(is_wall_tile(TE) || get_round_occluder(TE)) max_e = min(max_e, wall_limit)
-	if(is_wall_tile(TW) || get_round_occluder(TW)) max_w = max(max_w, -wall_limit)
+	// Shifting further than this toward an occluder would put the eye inside it.
+	var/wall_limit = 10
+	if(turf_blocks_shadow_view(get_step(src, NORTH)))
+		max_n = min(max_n, wall_limit)
+	if(turf_blocks_shadow_view(get_step(src, SOUTH)))
+		max_s = max(max_s, -wall_limit)
+	if(turf_blocks_shadow_view(get_step(src, EAST)))
+		max_e = min(max_e, wall_limit)
+	if(turf_blocks_shadow_view(get_step(src, WEST)))
+		max_w = max(max_w, -wall_limit)
 
 	if(CHECK_BITFIELD(direction, NORTH))
 		if(pixel_y < max_n + base_pixel_y)
@@ -99,7 +103,7 @@
 		passthroughable |= NORTH | EAST | SOUTH
 
 	if(pixel_x != old_px || pixel_y != old_py)
-		update_dynamic_shadows(custom_glide = 0)
+		update_dynamic_shadows()
 
 /mob/living/CanPass(atom/movable/mover, turf/target)
 	if(!mover)	//On rare occasions, there isn't a mover present.

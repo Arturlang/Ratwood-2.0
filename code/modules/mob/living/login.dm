@@ -4,7 +4,6 @@
 	if(client)
 		client.update_ooc_verb_visibility()
 		client.reset_shadow_pool()
-		client.init_shadow_pool()
 		update_dynamic_shadows()
 		if(client.prefs)
 			update_redflash_pref(client.prefs.no_redflash, update_hud = FALSE)

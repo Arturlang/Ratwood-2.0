@@ -187,6 +187,15 @@
 	/// world.time of last intercepted mouse-up, used to prevent double-clicks after signal intercept
 	var/click_intercept_time = 0
 
+	// Dynamic shadow state, driven by code/modules/lighting/dynamic_shadows.dm.
+	/// Shadow images not currently placed, ready for reuse.
+	var/list/image/shadow_image_pool = list()
+	/// Placed shadow images keyed by the fov_shadows triangle key.
+	var/list/image/active_shadows = list()
+	/// Cutout images keyed by shadow box id, created the first time the box is seen.
+	var/list/image/shadow_cutouts = list()
+	/// Box ids whose cutout is currently shown, keyed by box id.
+	var/list/visible_cutouts = list()
 /client/proc/update_weather(force)
 	if(!mob)
 		return

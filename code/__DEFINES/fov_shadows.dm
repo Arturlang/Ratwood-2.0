@@ -36,15 +36,13 @@
 #define fov_shadows_init_map_bounds(maxx, maxy, maxz) call_ext(FOV_SHADOWS, "init_map_bounds")("[maxx]", "[maxy]", "[maxz]")
 /// Marks one tile as SHADOW_CELL_EMPTY, SHADOW_CELL_WALL or SHADOW_CELL_TREE.
 #define fov_shadows_set_map_cell(x, y, z, cell_type) call_ext(FOV_SHADOWS, "set_map_cell")("[x]", "[y]", "[z]", "[cell_type]")
+/// Grows the grid to maxz levels, keeping existing cells and boxes. For z-levels added after init_map_bounds.
+#define fov_shadows_set_map_depth(maxz) call_ext(FOV_SHADOWS, "set_map_depth")("[maxz]")
 /// Marks many tiles at once from a flat list of x, y, z, cell_type quadruples.
 #define fov_shadows_bulk_set_map_cells(cells) call_ext(FOV_SHADOWS, "bulk_set_map_cells")(jointext(cells, ","))
 /// Registers or moves a pixel-space occluder box (px1, py1)-(px2, py2) anchored at world position (wx, wy) on z.
 #define fov_shadows_set_box_world(id, z, wx, wy, px1, py1, px2, py2) call_ext(FOV_SHADOWS, "set_box_world")("[id]", "[z]", "[wx]", "[wy]", "[px1]", "[py1]", "[px2]", "[py2]")
 /// Removes a box previously registered with fov_shadows_set_box_world.
 #define fov_shadows_remove_box_by_id(id) call_ext(FOV_SHADOWS, "remove_box_by_id")("[id]")
-/// Returns a flat list of 9 values per shadow triangle: anchor_x, anchor_y, matrix a, b, c, d, e, f, key.
-#define fov_shadows_calculate_shadows_fast(px, py, z, radius) __fov_shadows_decode(call_ext(FOV_SHADOWS, "calculate_shadows_fast")("[px]", "[py]", "[z]", "[radius]"))
-/// Returns list("shadows" = shadow triangles, "visible" = visible box ids) from one scan. Prefer this over calling the two functions below separately.
+/// Returns list("shadows" = flat list of 9 values per triangle: anchor_x, anchor_y, matrix a to f, key; "visible" = ids of boxes the viewer can see).
 #define fov_shadows_calculate_view(px, py, z, radius) __fov_shadows_decode(call_ext(FOV_SHADOWS, "calculate_view")("[px]", "[py]", "[z]", "[radius]"))
-/// Returns the list of box ids visible from (px, py) on z within radius.
-#define fov_shadows_get_visible_boxes(px, py, z, radius) __fov_shadows_decode(call_ext(FOV_SHADOWS, "get_visible_boxes")("[px]", "[py]", "[z]", "[radius]"))
