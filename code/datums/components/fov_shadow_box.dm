@@ -1,14 +1,9 @@
-/// Shadow box components by id, so a viewer's visible-box list can be mapped back to the prop.
+/// Shadow box components by id
 GLOBAL_LIST_EMPTY(fov_shadow_boxes)
 GLOBAL_VAR_INIT(fov_shadow_box_next_id, 0)
 
 /**
  * Gives a prop a pixel-precise occluder box in the fov_shadows library so it casts a dynamic shadow.
- *
- * With cutout enabled, a viewer who can see the prop also gets its sprite cut out of their shadow
- * layer, so the prop stands in front of the shadows it casts instead of being darkened by them.
- * The cutout is a per-client image built from the prop's appearance when first needed, so it is a
- * snapshot: props whose icon changes after creation should not use it.
  */
 /datum/component/fov_shadow_box
 	dupe_mode = COMPONENT_DUPE_UNIQUE
@@ -52,7 +47,6 @@ GLOBAL_VAR_INIT(fov_shadow_box_next_id, 0)
 	if(!anchor)
 		unregister_box()
 		return
-	// step_x and step_y only move under pixel movement; both are 0 for tile movement.
 	var/world_x = anchor.x + (owner.step_x + owner.pixel_x) / world.icon_size
 	var/world_y = anchor.y + (owner.step_y + owner.pixel_y) / world.icon_size
 	fov_shadows_set_box_world(box_id, anchor.z, world_x, world_y, box[1], box[2], box[3], box[4])
@@ -72,12 +66,10 @@ GLOBAL_VAR_INIT(fov_shadow_box_next_id, 0)
 	SIGNAL_HANDLER
 	register_box()
 
-/// A fresh image of the parent's sprite on the cutout plane, hidden until the viewer can see the box.
 /datum/component/fov_shadow_box/proc/build_cutout_image()
 	var/atom/movable/owner = parent
 	var/image/cutout_image = image(owner.icon, owner, owner.icon_state)
 	cutout_image.appearance = owner.appearance
-	// The image rides on the owner, which already applies its own pixel offsets and transform.
 	cutout_image.pixel_x = 0
 	cutout_image.pixel_y = 0
 	cutout_image.transform = null

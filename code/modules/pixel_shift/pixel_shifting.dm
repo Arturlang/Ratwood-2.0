@@ -42,8 +42,7 @@
 /mob/proc/pixel_shift(direction)
 	return
 
-/// Whether the shadow system treats this turf as solid, so pixel shifting stops short of it rather
-/// than letting the viewer's eye end up inside an occluder.
+/// Whether the shadow system treats this turf as solid, so pixel shifting doesn't actually blind you entirely
 /proc/turf_blocks_shadow_view(turf/checked)
 	return checked && checked.shadow_cell_type() != SHADOW_CELL_EMPTY
 
@@ -63,7 +62,6 @@
 	var/max_s = -PIXEL_SHIFT_MAXIMUM
 	var/max_e = PIXEL_SHIFT_MAXIMUM
 	var/max_w = -PIXEL_SHIFT_MAXIMUM
-	// Shifting further than this toward an occluder would put the eye inside it.
 	var/wall_limit = 10
 	if(turf_blocks_shadow_view(get_step(src, NORTH)))
 		max_n = min(max_n, wall_limit)

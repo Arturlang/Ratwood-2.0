@@ -25,7 +25,7 @@
 #define FOV_SHADOWS (__fov_shadows || __detect_fov_shadows())
 #endif
 
-/// Decodes a JSON list returned by the library. An empty string means the call failed inside the library.
+/// Decodes a JSON list returned by the library. If a empty string is returned, that means the external library has a error
 /proc/__fov_shadows_decode(raw)
 	return length(raw) ? json_decode(raw) : list()
 
